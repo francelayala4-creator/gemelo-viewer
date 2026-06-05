@@ -5,28 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>AION · Gemelo 3D · Torre de telecomunicaciones</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+
+<!-- importmap DEBE ir en head, antes de cualquier script type=module -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --ink:#0a0c10;--ink2:#12151c;--ink3:#1a1f2b;
-  --accent:#c4a24e;--text:#e8e8e8;--dim:#7a8090;
-  --ok:#52b052;
+  --accent:#c4a24e;--text:#e8e8e8;--dim:#7a8090;--ok:#52b052;
 }
 html,body{height:100%;background:var(--ink);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden}
-
 #hdr{height:48px;background:var(--ink2);border-bottom:1px solid #1e2433;
-  display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100;position:relative}
-#hdr .logo{font-size:18px;font-weight:700;letter-spacing:3px;color:var(--accent)}
-#hdr .sub{font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
-#hdr .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+  display:flex;align-items:center;padding:0 24px;gap:16px}
+.logo{font-size:18px;font-weight:700;letter-spacing:3px;color:var(--accent)}
+.sub{font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.right{margin-left:auto;display:flex;gap:8px}
 .pill{font-size:9px;letter-spacing:1px;padding:3px 10px;border-radius:2px;font-weight:600;text-transform:uppercase}
 .pill.ok{background:#52b05220;color:#52b052;border:1px solid #52b05240}
 .pill.info{background:#4e90e020;color:#4e90e0;border:1px solid #4e90e040}
-
 #main{display:flex;height:calc(100vh - 48px)}
-
-/* 3D panel */
 #viewer-col{flex:1;position:relative;background:#05070d;display:flex;flex-direction:column}
 #vhdr{height:36px;background:var(--ink2);border-bottom:1px solid #1e2433;
   display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
@@ -34,49 +40,37 @@ html,body{height:100%;background:var(--ink);color:var(--text);
 #vhdr .hi{color:var(--accent)}
 #cwrap{flex:1;position:relative;overflow:hidden}
 #splat-canvas{width:100%;height:100%;display:block;outline:none}
-
-/* Loading overlay */
 #loading{position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:14px;background:#05070d;transition:opacity .5s}
 #loading.done{opacity:0;pointer-events:none}
-#loading .spinner{width:36px;height:36px;border:2px solid #1e2433;
-  border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+.spinner{width:36px;height:36px;border:2px solid #1e2433;border-top-color:var(--accent);
+  border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 #loading h3{font-size:12px;letter-spacing:3px;color:var(--dim);text-transform:uppercase}
-#loading p{font-size:10px;color:#3a4050;text-align:center;max-width:280px;line-height:1.7}
-#loading .progress-bar{width:200px;height:2px;background:#1e2433;border-radius:1px;overflow:hidden}
-#loading .progress-fill{height:100%;background:var(--accent);width:0%;transition:width .3s}
-
-/* Drag hint shown only when waiting for file */
+#loading p{font-size:10px;color:#3a4050;text-align:center;max-width:300px;line-height:1.7}
+.progress-bar{width:220px;height:2px;background:#1e2433;border-radius:1px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:width .3s}
 #drop-hint{display:none;flex-direction:column;align-items:center;justify-content:center;
   gap:12px;position:absolute;inset:0;background:#05070dcc}
 #drop-hint.show{display:flex}
-#drop-hint .dh-icon{font-size:40px;opacity:.3}
 #drop-hint p{font-size:10px;color:var(--dim);text-align:center;line-height:1.8}
 #file-btn{background:var(--accent);color:#000;border:none;padding:8px 20px;
   font-size:10px;letter-spacing:2px;font-weight:700;cursor:pointer;text-transform:uppercase}
-#file-input{display:none}
-
-#vstatus{position:absolute;bottom:10px;left:12px;
-  font-size:9px;letter-spacing:1px;color:var(--dim);background:#00000080;padding:3px 8px}
-#vcontrols{position:absolute;bottom:10px;right:12px;
-  font-size:9px;color:var(--dim);background:#00000090;padding:6px 10px;line-height:1.8;text-align:right}
-
-/* Satellite panel */
-#sat-col{width:360px;flex-shrink:0;background:var(--ink2);
-  border-left:1px solid #1e2433;display:flex;flex-direction:column;overflow:hidden}
+#vstatus{position:absolute;bottom:10px;left:12px;font-size:9px;letter-spacing:1px;
+  color:var(--dim);background:#00000080;padding:3px 8px}
+#vcontrols{position:absolute;bottom:10px;right:12px;font-size:9px;color:var(--dim);
+  background:#00000090;padding:6px 10px;line-height:1.8;text-align:right}
+#sat-col{width:360px;flex-shrink:0;background:var(--ink2);border-left:1px solid #1e2433;
+  display:flex;flex-direction:column;overflow:hidden}
 #shdr{height:36px;background:var(--ink3);border-bottom:1px solid #1e2433;
-  display:flex;align-items:center;padding:0 16px;gap:8px;flex-shrink:0}
+  display:flex;align-items:center;padding:0 16px;flex-shrink:0}
 #shdr span{font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
-
 #map{height:230px;flex-shrink:0;border-bottom:1px solid #1e2433}
-
 #sinfo{padding:10px 14px;background:var(--ink3);border-bottom:1px solid #1e2433;flex-shrink:0}
 .si-title{font-size:10px;color:var(--accent);letter-spacing:2px;margin-bottom:8px;text-transform:uppercase}
 .si-row{display:flex;justify-content:space-between;margin-bottom:4px}
 .si-label{font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
 .si-val{font-size:9px;color:var(--text)}
-
 #result-box{margin:12px 14px;background:var(--ink3);border:1px solid #52b05230;
   border-left:3px solid #52b052;padding:12px 14px}
 .rb-title{font-size:10px;color:#52b052;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
@@ -84,8 +78,7 @@ html,body{height:100%;background:var(--ink);color:var(--text);
 .rb-indices{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
 .idx-tag{font-size:8px;letter-spacing:1px;padding:2px 8px;border-radius:1px;
   border:1px solid #1e2433;color:var(--dim);text-transform:uppercase}
-
-#notes{padding:0 14px 14px}
+#notes{padding:0 14px 14px;overflow-y:auto}
 .note-title{font-size:8px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;
   padding:8px 0 4px;border-bottom:1px solid #1e2433;margin-bottom:8px}
 .note{font-size:9px;color:#6a7080;line-height:1.6;margin-bottom:6px;
@@ -104,12 +97,9 @@ html,body{height:100%;background:var(--ink);color:var(--text);
 </div>
 
 <div id="main">
-
-  <!-- 3D Viewer -->
   <div id="viewer-col">
     <div id="vhdr">
-      <span>Gemelo 3D</span>
-      <span class="hi">· Gaussian Splatting ·</span>
+      <span>Gemelo 3D</span><span class="hi">· Gaussian Splatting ·</span>
       <span id="model-label">Torre de telecomunicaciones</span>
     </div>
     <div id="cwrap"
@@ -117,34 +107,22 @@ html,body{height:100%;background:var(--ink);color:var(--text);
          ondragleave="this.style.outline=''"
          ondrop="handleDrop(event)">
       <canvas id="splat-canvas" tabindex="0"></canvas>
-
-      <!-- Loading -->
       <div id="loading">
         <div class="spinner"></div>
         <h3 id="load-title">Cargando gemelo 3D</h3>
         <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
         <p id="load-msg">Conectando con modelo Gaussian Splatting…</p>
       </div>
-
-      <!-- Drag hint (fallback) -->
       <div id="drop-hint">
-        <div class="dh-icon">⬡</div>
-        <p>Arrastra <strong>splat.ply</strong> aquí<br/>
-          o selecciona el archivo manualmente</p>
-        <button id="file-btn" onclick="document.getElementById('file-input').click()">Seleccionar splat.ply</button>
-        <input type="file" id="file-input" accept=".ply" onchange="loadFromFile(this.files[0])"/>
+        <p>Arrastra <strong>splat.ply</strong> aquí o selecciona el archivo</p>
+        <button id="file-btn" onclick="document.getElementById('fi').click()">Seleccionar splat.ply</button>
+        <input type="file" id="fi" accept=".ply" style="display:none" onchange="loadFromFile(this.files[0])"/>
       </div>
-
       <div id="vstatus">Iniciando…</div>
-      <div id="vcontrols">
-        Click + arrastrar · rotar<br/>
-        Rueda · zoom<br/>
-        Ctrl + arrastrar · mover
-      </div>
+      <div id="vcontrols">Click+arrastrar·rotar<br/>Rueda·zoom<br/>Ctrl+arrastrar·mover</div>
     </div>
   </div>
 
-  <!-- Satellite panel -->
   <div id="sat-col">
     <div id="shdr"><span>Análisis Satelital · Sentinel-2</span></div>
     <div id="map"></div>
@@ -155,14 +133,9 @@ html,body{height:100%;background:var(--ink);color:var(--text);
       <div class="si-row"><span class="si-label">Captura satélite</span><span class="si-val">2026-06-02</span></div>
       <div class="si-row"><span class="si-label">Análisis</span><span class="si-val">2026-06-04 16:19</span></div>
     </div>
-
     <div id="result-box">
       <div class="rb-title">Nivel de riesgo global · NORMAL</div>
-      <div class="rb-desc">
-        El análisis multiespectral Sentinel-2 no detectó anomalías significativas
-        en el área de la torre para la fecha de captura. Los índices espectrales
-        evaluados se encuentran dentro de rangos normales.
-      </div>
+      <div class="rb-desc">El análisis multiespectral Sentinel-2 no detectó anomalías significativas en el área de la torre para la fecha de captura. Los índices espectrales evaluados se encuentran dentro de rangos normales.</div>
       <div class="rb-indices">
         <span class="idx-tag">NDVI · normal</span>
         <span class="idx-tag">NDWI · normal</span>
@@ -170,11 +143,10 @@ html,body{height:100%;background:var(--ink);color:var(--text);
         <span class="idx-tag">IRON_OXIDE · normal</span>
       </div>
     </div>
-
     <div id="notes">
       <div class="note-title">Notas del análisis</div>
-      <div class="note">Índices espectrales analizados: datos de Sentinel-2 L2A con resolución 10–20 m/px.</div>
-      <div class="note">Próxima revisión recomendada: 30 días. Programar seguimiento si se detectan cambios en el entorno de la torre.</div>
+      <div class="note">Índices espectrales analizados con Sentinel-2 L2A · resolución 10–20 m/px.</div>
+      <div class="note">Próxima revisión recomendada: 30 días.</div>
       <div class="note">El gemelo 3D permite inspección visual detallada de la estructura para complementar el análisis espectral.</div>
     </div>
   </div>
@@ -182,54 +154,35 @@ html,body{height:100%;background:var(--ink);color:var(--text);
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script type="module">
-import * as GS from 'https://esm.sh/@mkkellogg/gaussian-splats-3d@0.4.1?bundle';
+import * as GS from 'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.1/build/gaussian-splats-3d.module.js';
 
-const SITE = {lat:20.550013, lon:-100.267332};
-
-// ── Mapa ─────────────────────────────────────────────────────────────────
-const map = L.map('map',{zoomControl:false,attributionControl:false}).setView([SITE.lat,SITE.lon],15);
+// Mapa
+const map = L.map('map',{zoomControl:false,attributionControl:false}).setView([20.550013,-100.267332],15);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map);
 L.control.zoom({position:'bottomright'}).addTo(map);
+const icon = L.divIcon({html:'<div style="width:14px;height:14px;background:#c4a24e;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px #c4a24e90"></div>',className:'',iconAnchor:[7,7]});
+L.marker([20.550013,-100.267332],{icon}).bindPopup('<b style="color:#c4a24e">Torre RF</b><br/>20.5500, -100.2673<br/><span style="color:#52b052">Riesgo: NORMAL</span>').addTo(map);
+L.circle([20.550013,-100.267332],{radius:500,color:'#c4a24e',weight:1,fillOpacity:0.05,dashArray:'4'}).addTo(map);
+setTimeout(()=>map.invalidateSize(),300);
 
-// Marcador del sitio
-const siteIcon = L.divIcon({
-  html:`<div style="width:14px;height:14px;background:#c4a24e;border:2px solid #fff;
-        border-radius:50%;box-shadow:0 0 8px #c4a24e90"></div>`,
-  className:'',iconAnchor:[7,7]
-});
-L.marker([SITE.lat,SITE.lon],{icon:siteIcon})
-  .bindPopup(`<div style="font-family:monospace;font-size:11px">
-    <b style="color:#c4a24e">Torre de telecomunicaciones</b><br/>
-    <span style="color:#888">20.5500, -100.2673</span><br/>
-    <span style="color:#52b052">Riesgo: NORMAL</span>
-  </div>`)
-  .addTo(map);
+// Viewer
+const canvas=document.getElementById('splat-canvas');
+const loading=document.getElementById('loading');
+const dropHint=document.getElementById('drop-hint');
+const vstatus=document.getElementById('vstatus');
+const prog=document.getElementById('prog');
+const loadMsg=document.getElementById('load-msg');
+let viewer=null;
 
-// AOI circle
-L.circle([SITE.lat,SITE.lon],{radius:500,color:'#c4a24e',weight:1,fillOpacity:0.05,dashArray:'4'}).addTo(map);
-
-// ── Gaussian Splatting ────────────────────────────────────────────────────
-const canvas   = document.getElementById('splat-canvas');
-const loading  = document.getElementById('loading');
-const dropHint = document.getElementById('drop-hint');
-const vstatus  = document.getElementById('vstatus');
-const prog     = document.getElementById('prog');
-const loadMsg  = document.getElementById('load-msg');
-const loadTitle= document.getElementById('load-title');
-
-let viewer = null;
-
-async function initViewer(url, label) {
+async function initViewer(url,label){
   loading.classList.remove('done');
   dropHint.classList.remove('show');
-  loadTitle.textContent = 'Cargando ' + (label || 'splat.ply');
-  loadMsg.textContent = 'Iniciando motor Gaussian Splatting…';
-  prog.style.width = '5%';
-  vstatus.textContent = 'Cargando…';
-
-  if(viewer){ try{ viewer.dispose(); }catch(e){} }
-
-  viewer = new GS.Viewer({
+  document.getElementById('load-title').textContent='Cargando '+( label||'splat.ply');
+  loadMsg.textContent='Descargando modelo (387 MB)…';
+  prog.style.width='5%';
+  vstatus.textContent='Cargando…';
+  if(viewer){try{viewer.dispose();}catch(e){}}
+  viewer=new GS.Viewer({
     canvas,
     cameraUp:[0,1,0],
     initialCameraPosition:[0,2,6],
@@ -237,84 +190,46 @@ async function initViewer(url, label) {
     selfDrivenMode:true,
     useBuiltInControls:true,
     antialiased:true,
-    gpuAcceleratedSort:true,
   });
-
-  try {
-    loadMsg.textContent = 'Descargando puntos gaussianos…';
-    prog.style.width = '30%';
-    await viewer.addSplatScene(url, {
-      splatAlphaRemovalThreshold: 5,
-      progressiveLoad: true,
-    });
-    prog.style.width = '90%';
-    loadMsg.textContent = 'Renderizando…';
+  try{
+    prog.style.width='20%';
+    await viewer.addSplatScene(url,{splatAlphaRemovalThreshold:5,progressiveLoad:true});
+    prog.style.width='95%';
     viewer.start();
-    setTimeout(()=>{ prog.style.width='100%'; },300);
-    setTimeout(()=>{ loading.classList.add('done'); },800);
-    vstatus.textContent = (label || 'splat.ply') + ' · cargado';
-    document.getElementById('model-label').textContent = label || 'Torre de telecomunicaciones';
-  } catch(e) {
-    loadTitle.textContent = 'No se pudo cargar el modelo';
-    loadMsg.textContent = e.message || String(e);
-    prog.style.width = '0%';
-    setTimeout(()=>{ loading.classList.add('done'); dropHint.classList.add('show'); },1500);
-    vstatus.textContent = 'Error al cargar';
+    setTimeout(()=>{prog.style.width='100%';},300);
+    setTimeout(()=>{loading.classList.add('done');},700);
+    vstatus.textContent=(label||'splat.ply')+' · listo';
+    document.getElementById('model-label').textContent=label||'Torre · Gemelo 3D';
+  }catch(e){
+    loadMsg.textContent='Error: '+e.message;
+    prog.style.width='0%';
+    setTimeout(()=>{loading.classList.add('done');dropHint.classList.add('show');},1500);
+    vstatus.textContent='Error al cargar';
+    console.error('Splat load error:',e);
   }
 }
 
-// URL del splat.ply en Hugging Face (reemplaza con tu URL real tras subir)
-// Formato: https://huggingface.co/TU_USUARIO/gemelo-torre/resolve/main/splat.ply
-const HF_URL = (new URLSearchParams(location.search)).get('splat') ||
-  'https://github.com/francelayala4-creator/gemelo-viewer/releases/download/v1.0/splat.ply';
-
-async function tryAutoLoad() {
-  const urls = [
-    HF_URL,
-    'https://huggingface.co/datasets/Francel12/gemelo-torre-telecom/resolve/main/splat.ply',
-    './splat.ply',
-  ].filter(Boolean);
-
-  for(const url of urls){
-    try {
-      loadMsg.textContent = 'Probando: ' + url.split('/').slice(-1)[0] + ' desde ' + (url.startsWith('http') ? new URL(url).hostname : 'local') + '…';
-      const r = await fetch(url, {method:'HEAD', mode:'cors'});
-      if(r.ok){
-        loadMsg.textContent = 'Cargando desde ' + (url.startsWith('http') ? new URL(url).hostname : 'local') + '…';
-        initViewer(url, 'Torre · Gemelo 3D');
-        return;
-      }
-    } catch(e){ console.warn('URL falló:', url, e.message); }
-  }
-  // Fallback: drag & drop
-  loading.classList.add('done');
-  dropHint.classList.add('show');
-  vstatus.textContent = 'No se pudo cargar automáticamente — arrastra splat.ply';
+async function tryAutoLoad(){
+  const SPLAT='https://github.com/francelayala4-creator/gemelo-viewer/releases/download/v1.0/splat.ply';
+  loadMsg.textContent='Verificando acceso al modelo…';
+  try{
+    const r=await fetch(SPLAT,{method:'HEAD'});
+    if(r.ok){initViewer(SPLAT,'Torre Telecom · Gemelo 3D');return;}
+  }catch(e){console.warn('HEAD check failed:',e);}
+  // intentar directo sin HEAD check
+  initViewer(SPLAT,'Torre Telecom · Gemelo 3D');
 }
-
-// Forzar re-render del mapa Leaflet cuando sea visible
-setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 500);
 
 tryAutoLoad();
 
-// Drag & drop
-window.handleDrop = (e) => {
+window.handleDrop=(e)=>{
   e.preventDefault();
-  document.getElementById('cwrap').style.outline = '';
-  const file = e.dataTransfer.files[0];
-  if(file && file.name.endsWith('.ply'))
-    initViewer(URL.createObjectURL(file), file.name);
+  document.getElementById('cwrap').style.outline='';
+  const f=e.dataTransfer.files[0];
+  if(f&&f.name.endsWith('.ply'))initViewer(URL.createObjectURL(f),f.name);
 };
-
-// File picker
-window.loadFromFile = (file) => {
-  if(file) initViewer(URL.createObjectURL(file), file.name);
-};
-
-// Resize
-new ResizeObserver(()=>{ if(viewer) viewer.resizeRendererToDisplaySize(); })
-  .observe(document.getElementById('cwrap'));
+window.loadFromFile=(f)=>{if(f)initViewer(URL.createObjectURL(f),f.name);};
+new ResizeObserver(()=>{if(viewer)viewer.resizeRendererToDisplaySize();}).observe(document.getElementById('cwrap'));
 </script>
 </body>
 </html>
-
