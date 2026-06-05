@@ -269,22 +269,31 @@ const HF_URL = (new URLSearchParams(location.search)).get('splat') ||
   'https://github.com/francelayala4-creator/gemelo-viewer/releases/download/v1.0/splat.ply';
 
 async function tryAutoLoad() {
-  // 1. Parámetro URL: ?splat=https://...
-  if(HF_URL && HF_URL.startsWith('http')){
-    loadMsg.textContent = 'Cargando desde: ' + new URL(HF_URL).hostname + '…';
-    initViewer(HF_URL, 'Torre · Gemelo 3D');
-    return;
+  const urls = [
+    HF_URL,
+    'https://huggingface.co/datasets/Francel12/gemelo-torre-telecom/resolve/main/splat.ply',
+    './splat.ply',
+  ].filter(Boolean);
+
+  for(const url of urls){
+    try {
+      loadMsg.textContent = 'Probando: ' + url.split('/').slice(-1)[0] + ' desde ' + (url.startsWith('http') ? new URL(url).hostname : 'local') + '…';
+      const r = await fetch(url, {method:'HEAD', mode:'cors'});
+      if(r.ok){
+        loadMsg.textContent = 'Cargando desde ' + (url.startsWith('http') ? new URL(url).hostname : 'local') + '…';
+        initViewer(url, 'Torre · Gemelo 3D');
+        return;
+      }
+    } catch(e){ console.warn('URL falló:', url, e.message); }
   }
-  // 2. splat.ply local (GitHub Pages con LFS o servidor local)
-  try {
-    const r = await fetch('./splat.ply', {method:'HEAD'});
-    if(r.ok){ initViewer('./splat.ply', 'splat.ply'); return; }
-  } catch(e){}
-  // 3. Fallback: drag & drop
+  // Fallback: drag & drop
   loading.classList.add('done');
   dropHint.classList.add('show');
-  vstatus.textContent = 'Arrastra splat.ply o usa ?splat=URL';
+  vstatus.textContent = 'No se pudo cargar automáticamente — arrastra splat.ply';
 }
+
+// Forzar re-render del mapa Leaflet cuando sea visible
+setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 500);
 
 tryAutoLoad();
 
