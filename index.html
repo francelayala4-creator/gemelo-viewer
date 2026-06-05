@@ -210,14 +210,19 @@ async function initViewer(url,label){
 }
 
 async function tryAutoLoad(){
-  const SPLAT='https://github.com/francelayala4-creator/gemelo-viewer/releases/download/v1.0/splat.ply';
-  loadMsg.textContent='Verificando acceso al modelo…';
-  try{
-    const r=await fetch(SPLAT,{method:'HEAD'});
-    if(r.ok){initViewer(SPLAT,'Torre Telecom · Gemelo 3D');return;}
-  }catch(e){console.warn('HEAD check failed:',e);}
-  // intentar directo sin HEAD check
-  initViewer(SPLAT,'Torre Telecom · Gemelo 3D');
+  const WORKER = (new URLSearchParams(location.search)).get('worker') || '';
+
+  // Si hay ?worker=URL, usarlo DIRECTO sin HEAD check
+  if(WORKER){
+    loadMsg.textContent = 'Cargando desde Cloudflare Worker (387 MB)…';
+    initViewer(WORKER, 'Torre Telecom · Gemelo 3D');
+    return;
+  }
+
+  // Sin worker: intentar HuggingFace directo
+  const HF = 'https://huggingface.co/datasets/Francel12/gemelo-torre-telecom/resolve/main/splat.ply';
+  loadMsg.textContent = 'Cargando desde HuggingFace (387 MB)…';
+  initViewer(HF, 'Torre Telecom · Gemelo 3D');
 }
 
 tryAutoLoad();
@@ -229,7 +234,12 @@ window.handleDrop=(e)=>{
   if(f&&f.name.endsWith('.ply'))initViewer(URL.createObjectURL(f),f.name);
 };
 window.loadFromFile=(f)=>{if(f)initViewer(URL.createObjectURL(f),f.name);};
-new ResizeObserver(()=>{if(viewer)viewer.resizeRendererToDisplaySize();}).observe(document.getElementById('cwrap'));
+new ResizeObserver(()=>{
+  try{ if(viewer && viewer.renderer) viewer.renderer.setSize(
+    document.getElementById('cwrap').clientWidth,
+    document.getElementById('cwrap').clientHeight
+  ); }catch(e){}
+}).observe(document.getElementById('cwrap'));
 </script>
 </body>
 </html>
